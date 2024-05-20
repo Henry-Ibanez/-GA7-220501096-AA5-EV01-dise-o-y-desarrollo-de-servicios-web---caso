@@ -1,5 +1,5 @@
 
-from flask import Flask, render_template, redirect, request, session
+from flask import Flask, render_template, redirect, request, session, flash
 from flask_mysqldb import MySQL, MySQLdb
 
 app = Flask(__name__, template_folder='template')
@@ -46,10 +46,34 @@ def login():
                 return redirect('/admin')
             else:
                 error = 'Usuario o contraseña incorrectos'
-                return render_template('index.html', error='Usuario o contraseña incorrectos')
+                return render_template('index.html', error=error)
     
     # Siempre devolver algo si no es un POST
     return render_template('index.html')
+
+# Función registro
+@app.route('/registro', methods=["GET", "POST"])
+def register():
+    if request.method == 'POST':
+        if 'usuario' in request.form and 'correo' in request.form and 'password' in request.form:
+            _nombre = request.form['usuario']
+            _correo = request.form['correo']
+            _contraseña = request.form['password']
+
+            cur = mysql.connection.cursor()
+            cur.execute('SELECT * FROM usuarios WHERE correo = %s', (_correo,))
+            account = cur.fetchone()
+
+            if account:
+                flash('La cuenta ya existe!', 'error')
+                return redirect('/registro')
+            else:
+                cur.execute("INSERT INTO usuarios (nombre, correo, contraseña) VALUES (%s, %s, %s)", (_nombre, _correo, _contraseña))
+                mysql.connection.commit()
+                flash('Te has registrado correctamente!', 'success')
+                return redirect('/acceso-login')
+    
+    return render_template('registro.html')
 
 if __name__ == '__main__':
     app.secret_key = "henry123"
